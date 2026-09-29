@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "647920014033",
+    "project_id": "pintpoint-laundry",
+    "storage_bucket": "pintpoint-laundry.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647920014033:android:a520d9eeb21bc4f769ebf0",
+        "android_client_info": {
+          "package_name": "com.example.laundrypoint"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYRGLdLl1UdMyuleF2jj0pcruRYKwsfe0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

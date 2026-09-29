@@ -1,0 +1,1 @@
+Selalu gunakan Context 7 MCP server untuk mencari dokumentasi versi terbaru dari library, framework, atau package yang sedang saya gunakan sebelum menulis kode. Jika Anda membutuhkan informasi tambahan, panggil tool tersebut secara mandiri.
