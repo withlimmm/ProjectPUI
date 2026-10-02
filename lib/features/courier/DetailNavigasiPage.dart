@@ -165,7 +165,14 @@ class _DetailNavigasiPageState extends State<DetailNavigasiPage> {
   // --- FUNGSI UPLOAD BUKTI COD ---
   Future<void> _uploadBuktiDanSelesai() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.camera, imageQuality: 50);
+    
+    // [PENTING] Membuka kamera dengan kompresi otomatis agar ukuran foto < 1 MB
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 60,       // Kompres kualitas foto menjadi 60%
+      maxWidth: 1200,         // Batasi resolusi lebar maksimal
+      maxHeight: 1200,        // Batasi resolusi tinggi maksimal
+    );
 
     if (image == null) return; // Batal ambil foto
 
@@ -194,6 +201,16 @@ class _DetailNavigasiPageState extends State<DetailNavigasiPage> {
             ),
           );
           Navigator.pop(context, true);
+        }
+      } else if (response.statusCode == 422) {
+        if (mounted) {
+          setState(() => isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Foto terlalu besar (Max 1MB). Coba foto ulang."),
+              backgroundColor: Colors.orange,
+            ),
+          );
         }
       } else {
         throw Exception("Gagal: ${response.statusCode}");

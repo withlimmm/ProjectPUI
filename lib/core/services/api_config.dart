@@ -20,33 +20,11 @@ const String _ngrokUrl = 'https://uptake-jam-hypocrite.ngrok-free.dev'; // ← I
 
 /// Mendapatkan alamat base API secara dinamis
 String get apiBaseUrl {
-  // Priority 1: Ngrok (untuk testing HP fisik + Midtrans webhook)
-  if (_useNgrok && _ngrokUrl.isNotEmpty) {
-    return '$_ngrokUrl/api';
-  }
-  if (kIsWeb) {
-    return 'http://127.0.0.1:$_port/api';
-  }
-  if (Platform.isAndroid) {
-    final ip = _useEmulator ? _emulatorIp : _ipAddress;
-    return 'http://$ip:$_port/api';
-  }
-  // Untuk iOS Simulator, iOS bisa langsung membaca localhost laptop
-  return 'http://127.0.0.1:$_port/api';
+  return 'https://pintpoint.rakiradigital.com/api';
 }
 
 /// Mendapatkan alamat base Storage secara dinamis
 String get storageBaseUrl {
-  if (_useNgrok && _ngrokUrl.isNotEmpty) {
-    return '$_ngrokUrl/storage';
-  }
-  if (kIsWeb) {
-    return 'http://127.0.0.1:$_port/storage';
-  }
-  if (Platform.isAndroid) {
-    final ip = _useEmulator ? _emulatorIp : _ipAddress;
-    return 'http://$ip:$_port/storage';
-  }
-  return 'http://127.0.0.1:$_port/storage';
+  return 'https://pintpoint.rakiradigital.com/storage';
 }
 

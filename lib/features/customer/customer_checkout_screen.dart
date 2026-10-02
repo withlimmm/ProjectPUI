@@ -45,6 +45,9 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
   bool isLocaleReady = false;
   bool isLoading = false;
 
+  String promoCode = "";
+  double diskonKupon = 0;
+
   // Variabel Peta Flutter Map
   late final MapController _mapController;
   LatLng _centerMap = const LatLng(
@@ -159,6 +162,29 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
       setState(() {
         selectedDate = picked;
       });
+    }
+  }
+
+  Future<void> terapkanPromo() async {
+    final response = await http.post(
+      Uri.parse('$apiBaseUrl/promo/check'), // Gunakan URL API Anda
+      body: {'kode_promo': promoCode}
+    );
+    
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      setState(() {
+        // We will try 'diskon' first, fallback to 'nilai_diskon' in 'data'
+        final diskonVal = data['diskon'] ?? (data['data'] != null ? data['data']['nilai_diskon'] : 0);
+        diskonKupon = double.parse(diskonVal.toString());
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kupon berhasil digunakan!")));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kupon tidak valid.")));
+      }
     }
   }
 
@@ -301,6 +327,27 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
   }
 
   void _konfirmasiPesanan() {
+    // [TAMBAHKAN KODE INI]
+    final String jamBuka = "08:00"; // atau ambil dari variabel state API delivery Anda
+    final String jamTutup = "17:00";
+    final String currentTime = DateFormat('HH:mm').format(DateTime.now());
+    if (currentTime.compareTo(jamBuka) < 0 || currentTime.compareTo(jamTutup) > 0) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Pint Point Sedang Tutup"),
+          content: Text("Maaf, kami hanya beroperasi jam $jamBuka - $jamTutup WIB."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Mengerti"),
+            ),
+          ],
+        ),
+      );
+      return; // Stop di sini, API Create Order TIDAK AKAN dijalankan
+    }
+    // [BATAS TAMBAHAN KODE]
     // Cek radius sebelum lanjut (soft warning, tidak block)
     final jarak = _hitungJarak(
         _centerMap.latitude, _centerMap.longitude, _tokoLat, _tokoLng);
@@ -350,7 +397,7 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
         builder: (context) => CustomerReviewOrderScreen(
           layanan: widget.layanan,
           berat: widget.berat,
-          totalHarga: widget.totalHarga,
+          totalHarga: (widget.totalHarga - diskonKupon).toInt(),
           catatan: widget.catatan,
           alamat: alamatLengkap,
           latitude: _centerMap.latitude.toString(),
@@ -422,6 +469,27 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          labelText: "Masukkan Kupon Diskon",
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (val) => promoCode = val,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: terapkanPromo,
+                      child: const Text("Terapkan"),
+                    )
+                  ],
+                ),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -430,7 +498,7 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
                     style: TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                   Text(
-                    'Rp ${NumberFormat('#,###', 'id_ID').format(widget.totalHarga)}',
+                    'Rp ${NumberFormat('#,###', 'id_ID').format(widget.totalHarga - diskonKupon)}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
