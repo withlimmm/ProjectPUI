@@ -34,6 +34,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   int? selectedAddressId;
   List<dynamic> addressList = [];
 
+  // ✅ BARU: Tambah variable untuk jam operasional
+  bool isShopOpen = true;
+  String jamBuka = "08:00";
+  String jamTutup = "17:00";
+
   // --- LOGIKA PINTAR ALAMAT API ---
   String get apiUrl => apiBaseUrl;
 
@@ -148,6 +153,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               });
             }
           }
+        }
+      }
+      
+      // 4. Ambil Jam Operasional
+      final responseDelivery = await http.get(Uri.parse('$apiUrl/settings/delivery'));
+      if (responseDelivery.statusCode == 200) {
+        final data = json.decode(responseDelivery.body);
+        if (mounted) {
+          setState(() {
+            jamBuka = data['jam_buka'];
+            jamTutup = data['jam_tutup'];
+            final String currentTime = DateFormat('HH:mm').format(DateTime.now());
+            if (currentTime.compareTo(jamBuka) < 0 || currentTime.compareTo(jamTutup) > 0) {
+              isShopOpen = false;
+            } else {
+              isShopOpen = true;
+            }
+          });
         }
       }
     } catch (e) {
@@ -678,6 +701,22 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
           // --- FUNGSI ONTAP MENGARAH KE HALAMAN BUAT PESANAN ---
           onTap: () {
+            if (!isShopOpen) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Toko Tutup"),
+                  content: Text("Maaf, Pint Point beroperasi jam $jamBuka - $jamTutup WIB."),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Mengerti"),
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
             Navigator.push(
               context,
               MaterialPageRoute(

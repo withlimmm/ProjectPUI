@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/services/api_config.dart';
+import '../../core/services/firebase_service.dart';
 import '../courier/courier_login.dart';
 // --- IMPORT WADAH UTAMA KITA ---
 import '../customer/customer_home.dart';
@@ -88,10 +89,25 @@ class _AuthScreenState extends State<AuthScreen> {
 
         // JIKA BUKAN KURIR (Berarti Pelanggan Biasa), LANJUT SIMPAN DATA
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_id', responseData['data']['id'].toString());
+        final userId = responseData['data']['id'].toString();
+        await prefs.setString('user_id', userId);
         await prefs.setString('token', responseData['access_token']);
         await prefs.setString('user_name', responseData['data']['name']);
         await prefs.setString('user_role', responseData['data']['role']);
+
+        // --- SETUP FCM TOKEN & KIRIM KE BACKEND ---
+        String? fcmToken = await FirebaseService().setupFCM();
+        if (fcmToken != null) {
+          try {
+            await http.post(
+              Uri.parse('$apiUrl/profil/update-fcm/$userId'),
+              headers: {'Accept': 'application/json'},
+              body: {'fcm_token': fcmToken},
+            );
+          } catch (e) {
+            debugPrint("Error sending FCM Token: $e");
+          }
+        }
 
         _showPesan(
           'Login Berhasil! Selamat Datang, ${responseData['data']['name']}',

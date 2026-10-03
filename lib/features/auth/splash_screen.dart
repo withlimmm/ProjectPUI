@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:http/http.dart' as http;
+
 import '../../core/theme/app_colors.dart';
+import '../../core/services/api_config.dart';
+import '../../core/services/firebase_service.dart';
 import 'onboarding_screen.dart';
 // Rute yang benar sesuai dengan folder Anda:
 import '../customer/customer_home.dart';
@@ -29,9 +33,22 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (token != null) {
+      String? userId = prefs.getString('user_id');
+      if (userId != null) {
+        // FCM AUTO-UPDATE (Background)
+        FirebaseService().setupFCM().then((fcmToken) {
+          if (fcmToken != null) {
+            http.post(
+              Uri.parse('${apiBaseUrl}/profil/update-fcm/$userId'),
+              headers: {'Accept': 'application/json'},
+              body: {'fcm_token': fcmToken},
+            ).catchError((e) => print("FCM Update Error: $e"));
+          }
+        });
+      }
+
       Navigator.pushReplacement(
         context,
-        // const dihapus agar aman dari error kompilator
         MaterialPageRoute(builder: (context) => CustomerHomeScreen()),
       );
     } else {
