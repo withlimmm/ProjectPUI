@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 
 import '../../core/theme/app_colors.dart';
 import '../../core/services/api_config.dart';
@@ -36,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen> {
       String? userId = prefs.getString('user_id');
       if (userId != null) {
         // FCM AUTO-UPDATE (Background)
-        FirebaseService().setupFCM().then((fcmToken) {
+        AppFirebaseService().setupFCM().then((fcmToken) {
           if (fcmToken != null) {
             http.post(
               Uri.parse('${apiBaseUrl}/profil/update-fcm/$userId'),
@@ -110,3 +110,4 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+

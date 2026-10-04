@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'dart:convert';
 
 // --- IMPORT PAKET PETA GRATIS & LOKASI ---
@@ -17,6 +17,9 @@ import '../auth/auth_screen.dart';
 import 'customer_edit_profile_screen.dart';
 import '../../../core/services/api_config.dart';
 import 'customer_settings_pages.dart';
+import '../notification/notification_screen.dart';
+import '../chat/chat_list_screen.dart';
+import '../../../core/services/badge_service.dart';
 
 class CustomerProfileScreen extends StatefulWidget {
   const CustomerProfileScreen({super.key});
@@ -509,6 +512,80 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                   ),
                                   _buildMenuDivider(),
                                   _buildMenuItem(
+                                    Icons.notifications_none,
+                                    'Notifikasi',
+                                    Colors.orange,
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const NotificationScreen(),
+                                      ),
+                                    ),
+                                    trailing: ValueListenableBuilder<BadgeCounts>(
+                                      valueListenable: BadgeService.counts,
+                                      builder: (context, counts, child) {
+                                        return Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (counts.notif > 0)
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Text(
+                                                  '${counts.notif}',
+                                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            const SizedBox(width: 8),
+                                            const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textLight),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  _buildMenuDivider(),
+                                  _buildMenuItem(
+                                    Icons.chat_bubble_outline,
+                                    'Chat',
+                                    AppColors.primary,
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ChatListScreen(),
+                                      ),
+                                    ),
+                                    trailing: ValueListenableBuilder<BadgeCounts>(
+                                      valueListenable: BadgeService.counts,
+                                      builder: (context, counts, child) {
+                                        return Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (counts.chat > 0)
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Text(
+                                                  '${counts.chat}',
+                                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            const SizedBox(width: 8),
+                                            const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textLight),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  _buildMenuDivider(),
+                                  _buildMenuItem(
                                     Icons.security_outlined,
                                     'Keamanan Akun',
                                     Colors.blue,
@@ -730,6 +807,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     String title,
     Color iconColor, {
     VoidCallback? onTap,
+    Widget? trailing,
   }) {
     return ListTile(
       leading: Container(
@@ -748,7 +826,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           color: AppColors.textDark,
         ),
       ),
-      trailing: const Icon(
+      trailing: trailing ?? const Icon(
         Icons.arrow_forward_ios,
         size: 14,
         color: AppColors.textLight,

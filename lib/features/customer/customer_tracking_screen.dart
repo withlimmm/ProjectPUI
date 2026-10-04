@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io' show Platform;

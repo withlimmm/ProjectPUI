@@ -3,10 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-class FirebaseService {
-  static final FirebaseService _instance = FirebaseService._internal();
-  factory FirebaseService() => _instance;
-  FirebaseService._internal();
+class AppFirebaseService {
+  static final AppFirebaseService _instance = AppFirebaseService._internal();
+  factory AppFirebaseService() => _instance;
+  AppFirebaseService._internal();
 
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -32,7 +32,7 @@ class FirebaseService {
     const InitializationSettings initSettings =
         InitializationSettings(android: androidInit);
     
-    await _localNotificationsPlugin.initialize(initSettings);
+    await _localNotificationsPlugin.initialize(settings: initSettings);
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       String? token = await messaging.getToken();
@@ -51,10 +51,10 @@ class FirebaseService {
       
       if (message.notification != null) {
         _localNotificationsPlugin.show(
-          message.notification.hashCode,
-          message.notification!.title,
-          message.notification!.body,
-          const NotificationDetails(
+          id: message.notification.hashCode,
+          title: message.notification!.title,
+          body: message.notification!.body,
+          notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               'high_importance_channel',
               'High Importance Notifications',
@@ -118,3 +118,9 @@ class FirebaseService {
     return ref.onValue;
   }
 }
+
+
+
+
+
+

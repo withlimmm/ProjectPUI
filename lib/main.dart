@@ -22,7 +22,7 @@ void main() async {
   );
   
   // Inisialisasi FirebaseService (Push Notification Foreground & Background)
-  await FirebaseService().initialize();
+  await AppFirebaseService().setupFCM();
   
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
@@ -49,3 +49,5 @@ class PintPointApp extends StatelessWidget {
     );
   }
 }
+
+

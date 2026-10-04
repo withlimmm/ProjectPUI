@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'dart:convert'; // PENTING: Import harus di atas
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -96,7 +96,7 @@ class _AuthScreenState extends State<AuthScreen> {
         await prefs.setString('user_role', responseData['data']['role']);
 
         // --- SETUP FCM TOKEN & KIRIM KE BACKEND ---
-        String? fcmToken = await FirebaseService().setupFCM();
+        String? fcmToken = await AppFirebaseService().setupFCM();
         if (fcmToken != null) {
           try {
             await http.post(
@@ -655,3 +655,4 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 }
+

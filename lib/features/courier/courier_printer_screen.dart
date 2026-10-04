@@ -71,10 +71,9 @@ class _CourierPrinterScreenState extends State<CourierPrinterScreen> {
     try {
       bool status = await PrintBluetoothThermal.connectionStatus;
       if (status) {
-        List<int> ticket = await getReceiptData();
-        final result = await PrintBluetoothThermal.writeBytes(ticket);
+        await printReceiptData();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Berhasil mencetak: $result')),
+          const SnackBar(content: Text('Berhasil mencetak tanda terima')),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -88,17 +87,15 @@ class _CourierPrinterScreenState extends State<CourierPrinterScreen> {
     }
   }
 
-  Future<List<int>> getReceiptData() async {
-    List<int> bytes = [];
-    
+  Future<void> printReceiptData() async {
     // Receipt Header
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 2, text: "PINT POINT LAUNDRY\n"),
     );
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "Tanda Terima & Bukti COD\n"),
     );
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "================================\n"),
     );
     
@@ -108,20 +105,20 @@ class _CourierPrinterScreenState extends State<CourierPrinterScreen> {
     String service = widget.orderData['layanan'] ?? '-';
     String date = DateFormat('dd MMM yyyy, HH:mm').format(DateTime.now());
 
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "Tanggal : $date\n"),
     );
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "Pesanan : $orderId\n"),
     );
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "Nama    : $customer\n"),
     );
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "Layanan : $service\n"),
     );
     
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "================================\n"),
     );
     
@@ -129,29 +126,27 @@ class _CourierPrinterScreenState extends State<CourierPrinterScreen> {
     int price = int.tryParse(widget.orderData['total_harga']?.toString() ?? '0') ?? 0;
     String formattedPrice = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0).format(price);
     
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 2, text: "TOTAL : $formattedPrice\n"),
     );
     
     String paymentMethod = widget.orderData['payment_method']?.toString().toUpperCase() ?? 'COD';
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "METODE: $paymentMethod\n"),
     );
     
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "================================\n"),
     );
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "Terima kasih telah menggunakan\n"),
     );
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "layanan Pint Point Laundry!\n"),
     );
-    bytes += await PrintBluetoothThermal.writeString(
+    await PrintBluetoothThermal.writeString(
       printText: PrintTextSize(size: 1, text: "\n\n\n"), // feed paper
     );
-    
-    return bytes;
   }
 
   @override
@@ -211,3 +206,4 @@ class _CourierPrinterScreenState extends State<CourierPrinterScreen> {
     );
   }
 }
+

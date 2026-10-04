@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'dart:convert';
 // IMPORT IMAGE PICKER
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +9,9 @@ import '../../../core/theme/app_colors.dart';
 import 'courier_login.dart';
 import '../../../core/services/api_config.dart';
 import 'courier_settings_screens.dart'; // <-- IMPORT HALAMAN PENGATURAN BARU
+import '../notification/notification_screen.dart';
+import '../chat/chat_list_screen.dart';
+import '../../../core/services/badge_service.dart';
 
 class CourierAccountTab extends StatefulWidget {
   const CourierAccountTab({super.key});
@@ -372,6 +375,88 @@ class _CourierAccountTabState extends State<CourierAccountTab> {
                                 endIndent: 20,
                               ),
                               _buildMenuOption(
+                                Icons.notifications_active_outlined,
+                                'Notifikasi',
+                                () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const NotificationScreen(),
+                                    ),
+                                  );
+                                },
+                                trailing: ValueListenableBuilder<BadgeCounts>(
+                                  valueListenable: BadgeService.counts,
+                                  builder: (context, counts, child) {
+                                    return Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (counts.notif > 0)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '${counts.notif}',
+                                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        const SizedBox(width: 8),
+                                        const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                              const Divider(
+                                height: 1,
+                                indent: 50,
+                                endIndent: 20,
+                              ),
+                              _buildMenuOption(
+                                Icons.chat_bubble_outline,
+                                'Chat',
+                                () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ChatListScreen(),
+                                    ),
+                                  );
+                                },
+                                trailing: ValueListenableBuilder<BadgeCounts>(
+                                  valueListenable: BadgeService.counts,
+                                  builder: (context, counts, child) {
+                                    return Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (counts.chat > 0)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '${counts.chat}',
+                                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        const SizedBox(width: 8),
+                                        const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                              const Divider(
+                                height: 1,
+                                indent: 50,
+                                endIndent: 20,
+                              ),
+                              _buildMenuOption(
                                 Icons.help_outline,
                                 'Pusat Bantuan',
                                 () {
@@ -433,7 +518,7 @@ class _CourierAccountTabState extends State<CourierAccountTab> {
     );
   }
 
-  Widget _buildMenuOption(IconData icon, String title, VoidCallback onTap) {
+  Widget _buildMenuOption(IconData icon, String title, VoidCallback onTap, {Widget? trailing}) {
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -447,7 +532,7 @@ class _CourierAccountTabState extends State<CourierAccountTab> {
         title,
         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+      trailing: trailing ?? const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
       onTap: onTap, // AKSI KLIK AKTIF
     );
   }

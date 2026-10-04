@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'dart:convert';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/api_config.dart';

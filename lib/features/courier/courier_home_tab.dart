@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -10,6 +10,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/api_config.dart';
 import 'DetailNavigasiPage.dart';
+import '../../../core/widgets/badge_icon.dart';
+import '../notification/notification_screen.dart';
+import '../../../core/services/badge_service.dart';
 
 class CourierHomeTab extends StatefulWidget {
   const CourierHomeTab({super.key});
@@ -154,6 +157,29 @@ class _CourierHomeTabState extends State<CourierHomeTab> {
           ],
         ),
         actions: [
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationScreen(),
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8.0, top: 16.0),
+              child: ValueListenableBuilder<BadgeCounts>(
+                valueListenable: BadgeService.counts,
+                builder: (context, counts, child) {
+                  return BadgeIcon(
+                    icon: Icons.notifications_none,
+                    color: Colors.black,
+                    count: counts.notif,
+                  );
+                },
+              ),
+            ),
+          ),
           Row(
             children: [
               Text(

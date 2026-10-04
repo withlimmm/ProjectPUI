@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
@@ -11,6 +11,10 @@ import 'customer_order_screen.dart';
 import 'customer_profile_screen.dart';
 import 'customer_create_order_screen.dart'; // Import halaman buat pesanan baru
 import '../../../core/services/fcm_service.dart';
+import '../../../core/widgets/badge_icon.dart';
+import '../notification/notification_screen.dart';
+import '../chat/chat_list_screen.dart';
+import '../../../core/services/badge_service.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -386,7 +390,26 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   ),
                 ],
               ),
-              const Icon(Icons.notifications_none, color: Colors.white),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationScreen(),
+                    ),
+                  );
+                },
+                child: ValueListenableBuilder<BadgeCounts>(
+                  valueListenable: BadgeService.counts,
+                  builder: (context, counts, child) {
+                    return BadgeIcon(
+                      icon: Icons.notifications_none,
+                      color: Colors.white,
+                      count: counts.notif,
+                    );
+                  },
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -854,9 +877,25 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   Widget _buildChatFAB() {
     return FloatingActionButton(
-      onPressed: () {},
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ChatListScreen(),
+          ),
+        );
+      },
       backgroundColor: AppColors.primary,
-      child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+      child: ValueListenableBuilder<BadgeCounts>(
+        valueListenable: BadgeService.counts,
+        builder: (context, counts, child) {
+          return BadgeIcon(
+            icon: Icons.chat_bubble_outline,
+            color: Colors.white,
+            count: counts.chat,
+          );
+        },
+      ),
     );
   }
 

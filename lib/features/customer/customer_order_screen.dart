@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:http/http.dart' as http;
+import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io' show Platform;
@@ -708,14 +708,11 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
 
   Future<void> _submitRating(String orderId, int rating, String ulasan) async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String token = prefs.getString('auth_token') ?? '';
-
       var response = await http.post(
         Uri.parse("$apiUrl/pesanan/$orderId/rating"),
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
         },
         body: json.encode({
           'rating': rating,
@@ -727,7 +724,7 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Terima kasih! Ulasan berhasil dikirim.')),
         );
-        _fetchOrders(); // Refresh data
+        _fetchRiwayatPesanan(); // Refresh data
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gagal mengirim ulasan')),
@@ -739,3 +736,4 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
   }
 
 }
+
