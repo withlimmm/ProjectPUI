@@ -126,6 +126,7 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
     String s = status.toLowerCase();
     if (s.contains('menunggu konfirmasi')) return Colors.orange;
     if (s.contains('menunggu pembayaran')) return Colors.redAccent;
+    if (s.contains('batal') || s.contains('dibatalkan')) return Colors.red;
     if (s.contains('lunas') || s.contains('diproses') || s.contains('dicuci')) {
       return Colors.orange.shade700;
     }
@@ -641,4 +642,100 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
       ],
     );
   }
+  void _showRatingDialog(BuildContext context, String orderId) {
+    int _rating = 5;
+    TextEditingController _ulasanController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Beri Ulasan Layanan'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Bagaimana kualitas cucian dan performa kurir kami?'),
+                  const SizedBox(height: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < _rating ? Icons.star : Icons.star_border,
+                          color: Colors.orange,
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _rating = index + 1;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _ulasanController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: 'Tulis ulasan Anda (opsional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    _submitRating(orderId, _rating, _ulasanController.text);
+                  },
+                  child: const Text('Kirim'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitRating(String orderId, int rating, String ulasan) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String token = prefs.getString('auth_token') ?? '';
+
+      var response = await http.post(
+        Uri.parse("$apiUrl/pesanan/$orderId/rating"),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'rating': rating,
+          'ulasan': ulasan,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Terima kasih! Ulasan berhasil dikirim.')),
+        );
+        _fetchOrders(); // Refresh data
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal mengirim ulasan')),
+        );
+      }
+    } catch (e) {
+      print('Error submit rating: $e');
+    }
+  }
+
 }

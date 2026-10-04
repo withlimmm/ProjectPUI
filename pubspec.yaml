@@ -26,6 +26,7 @@ dependencies:
   firebase_database: ^12.6.0
   cloud_firestore: ^6.10.0
   flutter_local_notifications: ^22.3.1
+  print_bluetooth_thermal: ^1.2.5
 
 dev_dependencies:
   flutter_test:

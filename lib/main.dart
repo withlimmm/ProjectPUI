@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_colors.dart';
 import 'features/auth/splash_screen.dart';
+import 'core/services/firebase_service.dart'; // Tambahkan ini
 
 // Menangani notifikasi saat aplikasi berjalan di background/ditutup
 @pragma('vm:entry-point')
@@ -19,6 +20,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Inisialisasi FirebaseService (Push Notification Foreground & Background)
+  await FirebaseService().initialize();
+  
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
   runApp(const PintPointApp());

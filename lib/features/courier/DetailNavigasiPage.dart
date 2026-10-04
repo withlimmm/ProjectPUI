@@ -14,6 +14,7 @@ import 'dart:async';
 
 import '../../../core/services/api_config.dart';
 import '../chat/chat_screen.dart';
+import 'courier_printer_screen.dart';
 
 class DetailNavigasiPage extends StatefulWidget {
   final Map<String, dynamic> tugas;
@@ -241,6 +242,20 @@ class _DetailNavigasiPageState extends State<DetailNavigasiPage> {
         title: Text("Navigasi ${widget.tugas['id_pesanan'] ?? ''}"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.print, color: Colors.blue),
+            tooltip: 'Cetak Struk',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CourierPrinterScreen(orderData: widget.tugas),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -446,3 +461,5 @@ class _DetailNavigasiPageState extends State<DetailNavigasiPage> {
     return Colors.blue;
   }
 }
+
+

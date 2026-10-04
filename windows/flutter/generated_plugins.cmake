@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
   firebase_database
   geolocator_windows
+  print_bluetooth_thermal
   url_launcher_windows
 )
 
