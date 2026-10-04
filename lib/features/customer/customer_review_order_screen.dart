@@ -190,18 +190,30 @@ class _CustomerReviewOrderScreenState extends State<CustomerReviewOrderScreen> {
       } else {
         // Jika Laravel menolak, tampilkan pesan error dari Laravel di Terminal Flutter!
         debugPrint("LARAVEL ERROR: ${response.statusCode} - ${response.body}");
-        throw Exception("Gagal API");
+        String errMsg = "Gagal membuat pesanan. Pastikan server Laravel menyala.";
+        try {
+          final errData = jsonDecode(response.body);
+          if (errData['message'] != null) {
+            errMsg = errData['message'];
+          }
+        } catch (_) {}
+        throw Exception(errMsg);
       }
     } catch (e) {
       debugPrint("FLUTTER ERROR: $e");
       if (mounted) {
+        String displayMsg = 'Gagal membuat pesanan. Pastikan server Laravel menyala.';
+        if (e is Exception) {
+          displayMsg = e.toString().replaceFirst('Exception: ', '');
+        } else {
+          displayMsg = e.toString();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Gagal membuat pesanan. Pastikan server Laravel menyala.',
-            ),
+          SnackBar(
+            content: Text(displayMsg),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

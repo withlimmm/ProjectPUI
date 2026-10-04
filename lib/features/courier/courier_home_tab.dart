@@ -64,6 +64,38 @@ class _CourierHomeTabState extends State<CourierHomeTab> {
       }
     });
 
+    // Update status dan lokasi ke backend Laravel
+    try {
+      double lat = 0.0;
+      double lng = 0.0;
+      if (value) {
+        // Cek dan ambil GPS saat online
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (serviceEnabled) {
+          LocationPermission permission = await Geolocator.checkPermission();
+          if (permission == LocationPermission.denied) {
+            permission = await Geolocator.requestPermission();
+          }
+          if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+            Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+            lat = position.latitude;
+            lng = position.longitude;
+          }
+        }
+      }
+
+      await http.post(
+        Uri.parse('$apiUrl/kurir/update-location'),
+        body: {
+          'latitude': lat.toString(),
+          'longitude': lng.toString(),
+          'is_online': value ? '1' : '0',
+        },
+      );
+    } catch (e) {
+      debugPrint("Gagal update status online ke server: $e");
+    }
+
     if (isOnline) {
       _fetchTugasAktif(); // Tarik data jika online
     }

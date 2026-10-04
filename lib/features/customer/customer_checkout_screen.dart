@@ -40,6 +40,8 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
   double _radiusKm = 15.0;
   double _tokoLat = -7.751452341173487;
   double _tokoLng = 110.35193545872235;
+  String _jamBuka = "08:00";
+  String _jamTutup = "20:00";
   bool _radiusFetched = false;
   bool isGettingLocation = true;
   bool isLocaleReady = false;
@@ -118,6 +120,8 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
             _radiusKm = (data['radius_km'] as num).toDouble();
             _tokoLat = (data['toko_lat'] as num).toDouble();
             _tokoLng = (data['toko_lng'] as num).toDouble();
+            _jamBuka = data['jam_buka'] ?? "08:00";
+            _jamTutup = data['jam_tutup'] ?? "20:00";
             _radiusFetched = true;
           });
         }
@@ -328,15 +332,13 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
 
   void _konfirmasiPesanan() {
     // [TAMBAHKAN KODE INI]
-    final String jamBuka = "08:00"; // atau ambil dari variabel state API delivery Anda
-    final String jamTutup = "17:00";
     final String currentTime = DateFormat('HH:mm').format(DateTime.now());
-    if (currentTime.compareTo(jamBuka) < 0 || currentTime.compareTo(jamTutup) > 0) {
+    if (currentTime.compareTo(_jamBuka) < 0 || currentTime.compareTo(_jamTutup) > 0) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text("Pint Point Sedang Tutup"),
-          content: Text("Maaf, kami hanya beroperasi jam $jamBuka - $jamTutup WIB."),
+          content: Text("Maaf, kami hanya beroperasi jam $_jamBuka - $_jamTutup WIB."),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
