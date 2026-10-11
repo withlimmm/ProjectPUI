@@ -8,7 +8,8 @@ import '../../core/services/api_config.dart';
 import '../../core/services/firebase_service.dart';
 import 'onboarding_screen.dart';
 // Rute yang benar sesuai dengan folder Anda:
-import '../customer/customer_home.dart';
+import '../customer/customer_main_navigation.dart';
+import '../courier/courier_home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -34,6 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (token != null) {
       String? userId = prefs.getString('user_id');
+      String? userRole = prefs.getString('user_role');
       if (userId != null) {
         // FCM AUTO-UPDATE (Background)
         AppFirebaseService().setupFCM().then((fcmToken) {
@@ -47,10 +49,17 @@ class _SplashScreenState extends State<SplashScreen> {
         });
       }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => CustomerHomeScreen()),
-      );
+      if (userRole == 'kurir') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CourierHomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CustomerMainNavigation()),
+        );
+      }
     } else {
       Navigator.pushReplacement(
         context,

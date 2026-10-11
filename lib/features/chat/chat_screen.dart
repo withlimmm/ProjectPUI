@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:laundrypoint/core/services/auth_http.dart' as http;
 
 import '../../../core/services/api_config.dart';
@@ -12,6 +14,8 @@ class _Pesan {
   final int id;
   final String pengirim; // Pelanggan | Kurir | Admin
   final String isi;
+  final String? gambar;
+  final String? gambarUrl;
   final bool isMe;
   final DateTime waktu;
 
@@ -19,18 +23,36 @@ class _Pesan {
     required this.id,
     required this.pengirim,
     required this.isi,
+    this.gambar,
+    this.gambarUrl,
     required this.isMe,
     required this.waktu,
   });
 
+  String? get displayGambarUrl {
+    if (gambarUrl != null && gambarUrl!.isNotEmpty) {
+      if (gambarUrl!.contains('localhost') || gambarUrl!.contains('127.0.0.1')) {
+        final uri = Uri.parse(gambarUrl!);
+        return '$apiBaseUrl${uri.path.replaceFirst('/api', '')}';
+      }
+      return gambarUrl;
+    }
+    if (gambar != null && gambar!.isNotEmpty) {
+      return '$apiBaseUrl/chat-foto/$gambar';
+    }
+    return null;
+  }
+
   factory _Pesan.fromJson(Map<String, dynamic> j) => _Pesan(
-    id: (j['id'] as num).toInt(),
-    pengirim: (j['pengirim'] ?? '').toString(),
-    isi: (j['isi_pesan'] ?? '').toString(),
-    isMe: j['is_me'] == true,
-    waktu: DateTime.tryParse((j['created_at'] ?? '').toString())?.toLocal() ??
-        DateTime.now(),
-  );
+        id: (j['id'] as num).toInt(),
+        pengirim: (j['pengirim'] ?? '').toString(),
+        isi: (j['isi_pesan'] ?? '').toString(),
+        gambar: j['gambar']?.toString(),
+        gambarUrl: j['gambar_url']?.toString(),
+        isMe: j['is_me'] == true,
+        waktu: DateTime.tryParse((j['created_at'] ?? '').toString())?.toLocal() ??
+            DateTime.now(),
+      );
 }
 
 /// Chat per pesanan (Pelanggan <-> Kurir <-> Admin) lewat API Laravel.
@@ -53,7 +75,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
   final List<_Pesan> _pesan = [];
+  final ImagePicker _picker = ImagePicker();
 
+  File? _selectedImage;
   Timer? _timer;
   bool _loading = true;
   bool _sending = false;
@@ -143,17 +167,128 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 1280,
+        maxHeight: 1280,
+      );
+      if (picked != null) {
+        setState(() {
+          _selectedImage = File(picked.path);
+        });
+      }
+    } catch (e) {
+      _snack('Gagal mengambil gambar: $e');
+    }
+  }
+
+  void _showImagePickerModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Kirim Foto',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt, color: Colors.blue),
+                ),
+                title: const Text('Kamera', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Ambil foto langsung dengan kamera HP'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.photo_library, color: Colors.purple),
+                ),
+                title: const Text('Galeri', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Pilih gambar dari album / galeri HP'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _kirim() async {
     final isi = _controller.text.trim();
-    if (isi.isEmpty || _sending || _orderNumericId == null) return;
+    final imageFile = _selectedImage;
+
+    if ((isi.isEmpty && imageFile == null) || _sending || _orderNumericId == null) {
+      return;
+    }
 
     setState(() => _sending = true);
     try {
-      final res = await http.post(
-        Uri.parse('$apiBaseUrl/chat/kirim'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'id_pesanan': _orderNumericId, 'isi_pesan': isi}),
-      );
+      http.Response res;
+
+      if (imageFile != null) {
+        final request = http.MultipartRequest(
+          'POST',
+          Uri.parse('$apiBaseUrl/chat/kirim'),
+        );
+        request.fields['id_pesanan'] = _orderNumericId.toString();
+        if (isi.isNotEmpty) {
+          request.fields['isi_pesan'] = isi;
+        }
+        request.files.add(
+          await http.MultipartFile.fromPath('gambar', imageFile.path),
+        );
+
+        final streamed = await request.send();
+        res = await http.Response.fromStream(streamed);
+      } else {
+        res = await http.post(
+          Uri.parse('$apiBaseUrl/chat/kirim'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'id_pesanan': _orderNumericId, 'isi_pesan': isi}),
+        );
+      }
 
       if (!mounted) return;
 
@@ -162,6 +297,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final m = _Pesan.fromJson(Map<String, dynamic>.from(data));
         _controller.clear();
         setState(() {
+          _selectedImage = null;
           if (!_pesan.any((p) => p.id == m.id)) _pesan.add(m);
           if (m.id > _lastId) _lastId = m.id;
         });
@@ -178,6 +314,51 @@ class _ChatScreenState extends State<ChatScreen> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  void _showFullImage(String url) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  url,
+                  headers: const {'ngrok-skip-browser-warning': '69420'},
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child: Text(
+                      'Gagal memuat gambar',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _snack(String msg) {
@@ -281,6 +462,7 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(child: _buildBody()),
+          if (_selectedImage != null) _buildImagePreview(),
           if (_error == null || _pesan.isNotEmpty) _buildInput(),
         ],
       ),
@@ -340,7 +522,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text(
-              'Belum ada pesan.\nKirim pesan untuk memulai obrolan!',
+              'Belum ada pesan.\nKirim pesan atau foto untuk memulai obrolan!',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[500]),
             ),
@@ -389,13 +571,16 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _bubble(_Pesan m) {
+    final hasPhoto = m.displayGambarUrl != null;
+    final showText = m.isi.isNotEmpty && m.isi != '[Foto]';
+
     return Align(
       alignment: m.isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.fromLTRB(14, 9, 14, 6),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
         decoration: BoxDecoration(
           color: m.isMe ? AppColors.primary : Colors.white,
@@ -419,7 +604,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             if (!m.isMe)
               Padding(
-                padding: const EdgeInsets.only(bottom: 2),
+                padding: const EdgeInsets.only(left: 4, bottom: 4),
                 child: Text(
                   m.pengirim,
                   style: TextStyle(
@@ -429,21 +614,81 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
               ),
-            Text(
-              m.isi,
-              style: TextStyle(
-                color: m.isMe ? Colors.white : Colors.black87,
-                fontSize: 15,
+            if (hasPhoto) ...[
+              GestureDetector(
+                onTap: () => _showFullImage(m.displayGambarUrl!),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      maxHeight: 240,
+                      minHeight: 120,
+                    ),
+                    width: double.infinity,
+                    color: Colors.black.withOpacity(0.06),
+                    child: Image.network(
+                      m.displayGambarUrl!,
+                      headers: const {'ngrok-skip-browser-warning': '69420'},
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          height: 140,
+                          alignment: Alignment.center,
+                          child: CircularProgressIndicator(
+                            value: progress.expectedTotalBytes != null
+                                ? progress.cumulativeBytesLoaded /
+                                    progress.expectedTotalBytes!
+                                : null,
+                            strokeWidth: 2,
+                            color: m.isMe ? Colors.white : AppColors.primary,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 120,
+                        alignment: Alignment.center,
+                        color: Colors.grey[200],
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.broken_image, color: Colors.grey, size: 36),
+                            SizedBox(height: 4),
+                            Text(
+                              'Gagal memuat foto',
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
+              if (showText) const SizedBox(height: 6),
+            ],
+            if (showText)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  m.isi,
+                  style: TextStyle(
+                    color: m.isMe ? Colors.white : Colors.black87,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
             const SizedBox(height: 2),
             Align(
               alignment: Alignment.bottomRight,
-              child: Text(
-                _jam(m.waktu),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: m.isMe ? Colors.white70 : Colors.grey[500],
+              child: Padding(
+                padding: const EdgeInsets.only(right: 2),
+                child: Text(
+                  _jam(m.waktu),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: m.isMe ? Colors.white70 : Colors.grey[500],
+                  ),
                 ),
               ),
             ),
@@ -453,9 +698,61 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildImagePreview() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.file(
+              _selectedImage!,
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Foto siap dikirim',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                Text(
+                  'Bisa ketik pesan/keterangan sebelum kirim',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+            onPressed: () => setState(() => _selectedImage = null),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInput() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -470,6 +767,18 @@ class _ChatScreenState extends State<ChatScreen> {
         top: false,
         child: Row(
           children: [
+            IconButton(
+              icon: const Icon(Icons.add_photo_alternate_outlined,
+                  color: AppColors.primary, size: 26),
+              tooltip: 'Kirim Gambar',
+              onPressed: _sending ? null : _showImagePickerModal,
+            ),
+            IconButton(
+              icon: const Icon(Icons.camera_alt_outlined,
+                  color: AppColors.primary, size: 24),
+              tooltip: 'Ambil Foto',
+              onPressed: _sending ? null : () => _pickImage(ImageSource.camera),
+            ),
             Expanded(
               child: TextField(
                 controller: _controller,
@@ -478,7 +787,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 maxLength: 1000,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
-                  hintText: 'Ketik pesan Anda...',
+                  hintText: _selectedImage != null
+                      ? 'Keterangan foto (opsional)...'
+                      : 'Ketik pesan Anda...',
                   counterText: '',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
@@ -487,13 +798,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   filled: true,
                   fillColor: Colors.grey[100],
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                    horizontal: 16,
+                    vertical: 10,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Container(
               decoration: const BoxDecoration(
                 color: AppColors.primary,

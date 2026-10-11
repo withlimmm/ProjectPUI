@@ -232,7 +232,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      bottomNavigationBar: _buildBottomNav(),
+      
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
@@ -1140,8 +1140,8 @@ class _CustomerAddAddressScreenState extends State<CustomerAddAddressScreen> {
                   children: [
                     TileLayer(
                       urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.pintpoint.app',
+                          'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.rakiradigital.pintpoint'
                     ),
                   ],
                 ),

@@ -34,6 +34,7 @@ class MidtransService {
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json",
+              "X-Idempotency-Key": "midtrans_$orderId",
             },
             body: jsonEncode({
               "order_id": orderId,
@@ -104,6 +105,7 @@ class MidtransService {
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json",
+              "X-Idempotency-Key": "midtrans_$orderId",
             },
             body: jsonEncode({
               "order_id": orderId,

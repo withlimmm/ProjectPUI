@@ -120,65 +120,60 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   // --- FUNGSI MENGAMBIL DATA DARI LARAVEL ---
   Future<void> _fetchDashboardData() async {
     try {
-      // 1. Ambil Data Layanan
-      final responseLayanan = await http.get(Uri.parse('$apiUrl/layanan'));
-      if (responseLayanan.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            layananList = json.decode(responseLayanan.body);
-          });
-        }
-      }
+      // Eksekusi semua API secara BERSAMAAN (Paralel) untuk mempercepat loading!
+      final futures = <Future>[
+        http.get(Uri.parse('$apiUrl/layanan')),
+        http.get(Uri.parse('$apiUrl/promo')),
+        http.get(Uri.parse('$apiUrl/settings/delivery')),
+        if (userId.isNotEmpty) http.get(Uri.parse('$apiUrl/pesanan-aktif/$userId')),
+      ];
 
-      // 2. Ambil Data Promo
-      final responsePromo = await http.get(Uri.parse('$apiUrl/promo'));
-      if (responsePromo.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            promoList = json.decode(responsePromo.body);
-          });
-        }
-      }
+      final results = await Future.wait(futures);
 
-      // 3. Ambil Pesanan Aktif
-      if (userId.isNotEmpty) {
-        final responsePesanan = await http.get(
-          Uri.parse('$apiUrl/pesanan-aktif/$userId'),
-        );
-        if (responsePesanan.statusCode == 200) {
-          var dataPesanan = json.decode(responsePesanan.body);
-          // Pastikan data yang dikembalikan bukan kosong
-          if (dataPesanan != null &&
-              dataPesanan.toString() != "[]" &&
-              dataPesanan.toString() != "{}") {
-            if (mounted) {
-              setState(() {
-                pesananAktif = dataPesanan;
-              });
+      if (!mounted) return;
+
+      setState(() {
+        // 1. Data Layanan
+        var resLayanan = results[0] as http.Response;
+        if (resLayanan.statusCode == 200) {
+          layananList = json.decode(resLayanan.body);
+        }
+
+        // 2. Data Promo
+        var resPromo = results[1] as http.Response;
+        if (resPromo.statusCode == 200) {
+          promoList = json.decode(resPromo.body);
+        }
+
+        // 3. Jam Operasional
+        var resDelivery = results[2] as http.Response;
+        if (resDelivery.statusCode == 200) {
+          final data = json.decode(resDelivery.body);
+          jamBuka = data['jam_buka'];
+          jamTutup = data['jam_tutup'];
+          final String currentTime = DateFormat('HH:mm').format(DateTime.now());
+          isShopOpen = !(currentTime.compareTo(jamBuka) < 0 || currentTime.compareTo(jamTutup) > 0);
+        }
+
+        // 4. Pesanan Aktif
+        if (userId.isNotEmpty && results.length > 3) {
+          var resPesanan = results[3] as http.Response;
+          if (resPesanan.statusCode == 200) {
+            var dataPesanan = json.decode(resPesanan.body);
+            if (dataPesanan != null && dataPesanan.toString() != "[]" && dataPesanan.toString() != "{}") {
+              pesananAktif = dataPesanan;
             }
           }
         }
-      }
-      
-      // 4. Ambil Jam Operasional
-      final responseDelivery = await http.get(Uri.parse('$apiUrl/settings/delivery'));
-      if (responseDelivery.statusCode == 200) {
-        final data = json.decode(responseDelivery.body);
-        if (mounted) {
-          setState(() {
-            jamBuka = data['jam_buka'];
-            jamTutup = data['jam_tutup'];
-            final String currentTime = DateFormat('HH:mm').format(DateTime.now());
-            if (currentTime.compareTo(jamBuka) < 0 || currentTime.compareTo(jamTutup) > 0) {
-              isShopOpen = false;
-            } else {
-              isShopOpen = true;
-            }
-          });
-        }
-      }
+      });
     } catch (e) {
       debugPrint("Error mengambil data dashboard: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -203,7 +198,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       floatingActionButton: _buildChatFAB(),
-      bottomNavigationBar: _buildBottomNav(),
+      
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),

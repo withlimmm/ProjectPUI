@@ -136,8 +136,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
         separatorBuilder: (context, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final chat = _chats[index];
-          final String receiverName = chat['nama_lawan_bicara'] ?? 'Pesanan #${chat['id_pesanan']}';
-          final int unreadCount = chat['unread_count'] ?? 0;
+          final String receiverName = chat['lawan_bicara'] ?? 'Pesanan #${chat['order_id']}';
+          final int unreadCount = chat['belum_dibaca'] ?? 0;
           
           return ListTile(
             tileColor: Colors.white,
@@ -179,7 +179,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    chat['last_message'] ?? '...',
+                    chat['pesan_terakhir'] ?? '...',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -212,7 +212,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => ChatScreen(
-                    orderId: chat['id_pesanan'].toString(),
+                    orderId: chat['order_id'].toString(),
                     receiverName: receiverName,
                   ),
                 ),

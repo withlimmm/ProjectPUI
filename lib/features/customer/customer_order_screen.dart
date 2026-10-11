@@ -161,7 +161,7 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      
       body: isLoading || !isLocaleReady
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
@@ -326,8 +326,30 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
     String idOrder =
         'PP-$formattedDate-${pesanan['id'].toString().padLeft(3, '0')}';
 
-    bool butuhPembayaran = status.toLowerCase().contains('menunggu pembayaran');
+    final String payMethod = (pesanan['payment_method'] ?? '').toString().toLowerCase();
+    final String payStatus = (pesanan['payment_status'] ?? '').toString().toLowerCase();
+    final bool isCOD = payMethod == 'cod';
+    final bool isLunas = payStatus == 'paid' || payStatus == 'paid_cod' || payStatus == 'cod_confirmed';
+
+    // Jika COD, pelanggan bayar tunai ke kurir saat diantar, jadi tidak butuh bayar sekarang online
+    bool butuhPembayaran = status.toLowerCase().contains('menunggu pembayaran') && !isCOD;
     bool pesananSelesai = status.toLowerCase() == 'selesai';
+
+    String infoLabel;
+    Color infoColor;
+    if (pesananSelesai) {
+      infoLabel = 'Pesanan Selesai';
+      infoColor = Colors.green;
+    } else if (butuhPembayaran) {
+      infoLabel = 'Menunggu Pembayaran';
+      infoColor = Colors.redAccent;
+    } else if (isCOD && !isLunas) {
+      infoLabel = 'Bayar Tunai ke Kurir (COD)';
+      infoColor = const Color(0xFF2E7D32);
+    } else {
+      infoLabel = 'Sedang diproses';
+      infoColor = _getStatusColor(status);
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
@@ -449,21 +471,18 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: _getStatusColor(status),
+                        color: infoColor,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        butuhPembayaran
-                            ? 'Pembayaran tertunda'
-                            : pesananSelesai
-                            ? 'Pesanan Selesai'
-                            : 'Sedang diproses',
+                        infoLabel,
                         style: TextStyle(
-                          color: _getStatusColor(status),
+                          color: infoColor,
                           fontSize: 12,
+                          fontWeight: (isCOD && !isLunas) ? FontWeight.w600 : FontWeight.normal,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -482,7 +501,9 @@ class _CustomerOrderScreenState extends State<CustomerOrderScreen> {
                         builder: (context) =>
                             CustomerPaymentScreen(dataPesanan: pesanan),
                       ),
-                    );
+                    ).then((_) {
+                      _fetchRiwayatPesanan();
+                    });
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(

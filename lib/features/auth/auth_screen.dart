@@ -8,7 +8,7 @@ import '../../core/services/api_config.dart';
 import '../../core/services/firebase_service.dart';
 import '../courier/courier_login.dart';
 // --- IMPORT WADAH UTAMA KITA ---
-import '../customer/customer_home.dart';
+import '../customer/customer_main_navigation.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -117,7 +117,7 @@ class _AuthScreenState extends State<AuthScreen> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const CustomerHomeScreen()),
+            MaterialPageRoute(builder: (context) => const CustomerMainNavigation()),
           );
         }
       } else {

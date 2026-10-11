@@ -58,7 +58,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _markAsRead(String id, int index) async {
-    if (_notifikasi[index]['read_at'] != null) return;
+    if (_notifikasi[index]['read'] == true) return;
 
     try {
       final res = await http.post(Uri.parse('$apiBaseUrl/notifikasi/$id/baca'));
@@ -183,7 +183,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final notif = _notifikasi[index];
-          final bool isUnread = notif['read_at'] == null;
+          final bool isUnread = notif['read'] == false;
 
           return GestureDetector(
             onTap: () => _markAsRead(notif['id'].toString(), index),
@@ -226,7 +226,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          notif['data']['title'] ?? 'Notifikasi',
+                          notif['title'] ?? 'Notifikasi',
                           style: TextStyle(
                             fontWeight: isUnread
                                 ? FontWeight.bold
@@ -237,7 +237,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          notif['data']['message'] ?? '',
+                          notif['message'] ?? '',
                           style: TextStyle(
                             fontSize: 14,
                             color: isUnread ? Colors.black87 : Colors.black54,

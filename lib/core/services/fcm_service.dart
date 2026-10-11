@@ -3,9 +3,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:laundrypoint/core/services/auth_http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class FcmService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   Future<void> initPushNotification() async {
     // Meminta izin notifikasi (khusus iOS/Web, Android biasanya otomatis)
@@ -31,14 +33,45 @@ class FcmService {
         _sendTokenToServer(newToken);
       });
       
+      // Inisialisasi plugin notifikasi lokal untuk Foreground
+      const AndroidInitializationSettings initSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const InitializationSettings initSettings = InitializationSettings(android: initSettingsAndroid);
+      await _localNotifications.initialize(settings: initSettings);
+
       // Tangani notifikasi saat aplikasi terbuka (Foreground)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         print('Got a message whilst in the foreground!');
-        print('Message data: ${message.data}');
-
+        
         if (message.notification != null) {
-          print('Message also contained a notification: ${message.notification}');
-          // Anda bisa menampilkan snackbar/dialog di sini jika mau
+          const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+            'high_importance_channel', // id
+            'High Importance Notifications', // title
+            importance: Importance.max,
+            priority: Priority.high,
+          );
+          const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
+          
+          _localNotifications.show(
+            id: message.hashCode,
+            title: message.notification?.title ?? 'Notifikasi',
+            body: message.notification?.body ?? '',
+            notificationDetails: platformDetails,
+          );
+        } else if (message.data.isNotEmpty) {
+           const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+            'high_importance_channel', // id
+            'High Importance Notifications', // title
+            importance: Importance.max,
+            priority: Priority.high,
+          );
+          const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
+          
+          _localNotifications.show(
+            id: message.hashCode,
+            title: message.data['title'] ?? 'Notifikasi Baru',
+            body: message.data['message'] ?? 'Silakan cek aplikasi Anda.',
+            notificationDetails: platformDetails,
+          );
         }
       });
     } else {

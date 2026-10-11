@@ -24,6 +24,9 @@ Future<Map<String, String>> _withAuth(Map<String, String>? headers) async {
   if (!result.keys.any((k) => k.toLowerCase() == 'accept')) {
     result['Accept'] = 'application/json';
   }
+  
+  // BYPASS NGROK BROWSER WARNING!
+  result['ngrok-skip-browser-warning'] = '69420';
   final hasAuth = result.keys.any((k) => k.toLowerCase() == 'authorization');
   if (!hasAuth) {
     final prefs = await SharedPreferences.getInstance();
@@ -36,7 +39,7 @@ Future<Map<String, String>> _withAuth(Map<String, String>? headers) async {
 }
 
 Future<base.Response> get(Uri url, {Map<String, String>? headers}) async =>
-    base.get(url, headers: await _withAuth(headers));
+    base.get(url, headers: await _withAuth(headers)).timeout(const Duration(seconds: 30));
 
 Future<base.Response> post(
   Uri url, {
@@ -49,7 +52,7 @@ Future<base.Response> post(
       headers: await _withAuth(headers),
       body: body,
       encoding: encoding,
-    );
+    ).timeout(const Duration(seconds: 30));
 
 Future<base.Response> put(
   Uri url, {
@@ -62,7 +65,7 @@ Future<base.Response> put(
       headers: await _withAuth(headers),
       body: body,
       encoding: encoding,
-    );
+    ).timeout(const Duration(seconds: 30));
 
 Future<base.Response> patch(
   Uri url, {
@@ -75,7 +78,7 @@ Future<base.Response> patch(
       headers: await _withAuth(headers),
       body: body,
       encoding: encoding,
-    );
+    ).timeout(const Duration(seconds: 30));
 
 Future<base.Response> delete(
   Uri url, {
@@ -88,7 +91,7 @@ Future<base.Response> delete(
       headers: await _withAuth(headers),
       body: body,
       encoding: encoding,
-    );
+    ).timeout(const Duration(seconds: 30));
 
 /// Multipart request yang otomatis menyertakan token saat `send()`.
 class MultipartRequest extends base.MultipartRequest {

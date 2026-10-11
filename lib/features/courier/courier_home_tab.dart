@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
@@ -399,49 +400,115 @@ class _CourierHomeTabState extends State<CourierHomeTab> {
     );
   }
 
-  // WIDGET KARTU TUGAS (MUNCUL JIKA ADA ORDERAN)
+  // WIDGET KARTU TUGAS (DILENGKAPI BADGE TIPE & PEMBAYARAN JELAS)
   Widget _buildTugasCard(Map<String, dynamic> tugas) {
-    bool isMenunggu = tugas['status'] == 'Menunggu Kurir';
+    String status = tugas['status'] ?? '';
+    final s = status.toLowerCase();
+    bool isMenunggu = status == 'Menunggu Kurir' || status == 'Menunggu Konfirmasi';
+    bool isJemput = s.contains('konfirmasi') ||
+        s.contains('kurir') ||
+        s.contains('jemput') ||
+        s.contains('menuju lokasi') ||
+        s.contains('tiba di lokasi');
+    bool isDiLaundry = s.contains('diterima laundry') ||
+        s.contains('cuci') ||
+        s.contains('pembayaran');
+    bool isAntar = s.contains('siap') || s.contains('antar');
+
+    // Pembayaran
+    final String paymentMethod = (tugas['payment_method'] ?? '').toString().toLowerCase();
+    final String paymentStatus = (tugas['payment_status'] ?? '').toString().toLowerCase();
+    final bool isCod = paymentMethod == 'cod';
+    final bool isPaid = paymentStatus == 'paid' ||
+        paymentStatus == 'paid_cod' ||
+        paymentStatus == 'cod_confirmed' ||
+        paymentStatus == 'settlement' ||
+        paymentStatus == 'capture';
+    final int totalHarga = (double.tryParse(tugas['total_harga']?.toString() ?? '0') ?? 0).toInt();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isJemput
+              ? Colors.orange.shade200
+              : isAntar
+                  ? Colors.blue.shade200
+                  : Colors.grey.shade200,
+          width: (isJemput || isAntar) ? 1.2 : 1.0,
+        ),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, 5),
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header: Badge Tipe Tugas + ID Pesanan
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isMenunggu
+                  color: isJemput
                       ? Colors.orange.shade50
-                      : Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(10),
+                      : isDiLaundry
+                          ? Colors.purple.shade50
+                          : isAntar
+                              ? Colors.blue.shade50
+                              : Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  isMenunggu ? 'Jemput Baru' : 'Sedang Berjalan',
-                  style: TextStyle(
-                    color: isMenunggu ? Colors.orange : Colors.blue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isJemput
+                          ? Icons.shopping_bag_outlined
+                          : isDiLaundry
+                              ? Icons.local_laundry_service
+                              : isAntar
+                                  ? Icons.delivery_dining
+                                  : Icons.check_circle_outline,
+                      size: 14,
+                      color: isJemput
+                          ? Colors.orange.shade800
+                          : isDiLaundry
+                              ? Colors.purple.shade800
+                              : isAntar
+                                  ? Colors.blue.shade800
+                                  : Colors.green.shade800,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      isJemput
+                          ? 'JEMPUT CUCIAN'
+                          : isDiLaundry
+                              ? 'PROSES CUCI DI TOKO'
+                              : isAntar
+                                  ? 'ANTAR CUCIAN BERSIH'
+                                  : 'SELESAI',
+                      style: TextStyle(
+                        color: isJemput
+                            ? Colors.orange.shade800
+                            : isDiLaundry
+                                ? Colors.purple.shade800
+                                : isAntar
+                                    ? Colors.blue.shade800
+                                    : Colors.green.shade800,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Text(
@@ -454,29 +521,75 @@ class _CourierHomeTabState extends State<CourierHomeTab> {
               ),
             ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 12),
+
+          // Alamat Pelanggan
           const Text(
             'Alamat Pelanggan',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            style: TextStyle(color: Colors.grey, fontSize: 11),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 3),
           Text(
             tugas['alamat'] ?? 'Alamat tidak tersedia',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 10),
+
+          // Nama Pelanggan + Badge Tagihan COD / Lunas
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.person, size: 16, color: Colors.grey),
-              const SizedBox(width: 5),
-              Text(
-                tugas['nama_pelanggan'] ?? 'Pelanggan',
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+              Row(
+                children: [
+                  const Icon(Icons.person, size: 16, color: Colors.grey),
+                  const SizedBox(width: 5),
+                  Text(
+                    tugas['nama_pelanggan'] ?? 'Pelanggan',
+                    style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (isCod && !isPaid)
+                      ? const Color(0xFFFFF3E0)
+                      : const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: (isCod && !isPaid)
+                        ? const Color(0xFFFFB74D)
+                        : const Color(0xFF81C784),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      (isCod && !isPaid) ? Icons.payments_outlined : Icons.check_circle_outline,
+                      size: 12,
+                      color: (isCod && !isPaid) ? const Color(0xFFE65100) : const Color(0xFF2E7D32),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      (isCod && !isPaid)
+                          ? 'Tagih COD: Rp ${NumberFormat('#,###', 'id_ID').format(totalHarga)}'
+                          : 'Lunas',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: (isCod && !isPaid) ? const Color(0xFFE65100) : const Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 15),
+            padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1),
           ),
 
@@ -485,15 +598,16 @@ class _CourierHomeTabState extends State<CourierHomeTab> {
             SizedBox(
               width: double.infinity,
               height: 45,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 onPressed: () => _terimaTugas(tugas['id'].toString()),
-                child: const Text(
+                icon: const Icon(Icons.check, color: Colors.white, size: 18),
+                label: const Text(
                   'Terima Tugas Penjemputan',
                   style: TextStyle(
                     color: Colors.white,
@@ -506,16 +620,14 @@ class _CourierHomeTabState extends State<CourierHomeTab> {
             SizedBox(
               width: double.infinity,
               height: 45,
-              child: OutlinedButton(
+              child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary, width: 2),
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                // --- PERBAIKAN: Fungsi OnPressed dihidupkan ---
                 onPressed: () async {
-                  // Arahkan ke halaman detail pesanan dan tunggu kurir kembali (pop)
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -523,14 +635,13 @@ class _CourierHomeTabState extends State<CourierHomeTab> {
                     ),
                   );
 
-                  // Jika result true (status diubah di dalam DetailNavigasiPage),
-                  // maka kita tarik data terbaru dari Laravel.
                   if (result == true) {
                     _fetchTugasAktif();
                   }
                 },
-                child: const Text(
-                  'Lihat Detail Navigasi',
+                icon: const Icon(Icons.navigation_outlined, color: AppColors.primary, size: 18),
+                label: const Text(
+                  'Buka Detail Navigasi & Status',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,

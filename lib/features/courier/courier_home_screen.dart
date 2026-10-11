@@ -25,7 +25,10 @@ class _CourierHomeScreenState extends State<CourierHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex], // Menampilkan halaman sesuai index
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ), // Menampilkan halaman sesuai index
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         selectedItemColor: const Color(0xFF00A2E9),

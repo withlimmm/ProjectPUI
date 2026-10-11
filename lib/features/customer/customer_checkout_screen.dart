@@ -581,8 +581,8 @@ class _CustomerCheckoutScreenState extends State<CustomerCheckoutScreen> {
                     children: [
                       TileLayer(
                         urlTemplate:
-                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.pintpoint.app',
+                            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.rakiradigital.pintpoint'
                       ),
                     ],
                   ),
